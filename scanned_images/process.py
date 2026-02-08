@@ -16,6 +16,7 @@ import os
 import sys
 import shutil
 import base64
+import time
 import glob as globmod
 
 DATA_DIR = "/data"
@@ -114,28 +115,39 @@ def run_ocr(image_files, filename):
         ext = os.path.splitext(img_file)[1].lower()
         mime = "image/png" if ext == ".png" else "image/jpeg"
 
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
+        response = None
+        for attempt in range(5):
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
                         {
-                            "type": "text",
-                            "text": "Extract all text from this scanned document image. "
-                                    "Preserve the original structure and formatting as much as possible. "
-                                    "Return only the extracted text, no commentary.",
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime};base64,{img_data}",
-                            },
-                        },
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "Extract all text from this scanned document image. "
+                                            "Preserve the original structure and formatting as much as possible. "
+                                            "Return only the extracted text, no commentary.",
+                                },
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{mime};base64,{img_data}",
+                                    },
+                                },
+                            ],
+                        }
                     ],
-                }
-            ],
-        )
+                )
+                break
+            except Exception as e:
+                if "429" in str(e) and attempt < 4:
+                    wait = 2 ** attempt
+                    print(f"  Rate limited, retrying in {wait}s...")
+                    time.sleep(wait)
+                else:
+                    raise
 
         page_text = response.choices[0].message.content
         all_text.append(f"## Page {i}\n\n{page_text}")
