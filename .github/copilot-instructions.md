@@ -37,12 +37,12 @@ docker run --rm -e FILENAME="my_document" -v "${PWD}/my_scans:/data" scansort
 
 With OCR:
 ```bash
-docker run --rm -e FILENAME="my_document" -e OPENAI_API_KEY -e OPENAI_MODEL="gpt-4o-mini" -v "${PWD}/my_scans:/data" scansort
+docker run --rm -it -e FILENAME="my_document" -e OPENAI_API_KEY -e OPENAI_MODEL="gpt-4o-mini" -v "${PWD}/my_scans:/data" scansort
 ```
 
 OCR only (on already reordered images):
 ```bash
-docker run --rm -e FILENAME="my_document" -e MODE=ocr -e OPENAI_API_KEY -v "${PWD}/my_scans:/data" scansort
+docker run --rm -it -e FILENAME="my_document" -e MODE=ocr -e OPENAI_API_KEY -v "${PWD}/my_scans:/data" scansort
 ```
 
 ## Architecture
