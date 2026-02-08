@@ -20,3 +20,4 @@ Environment variables:
 - `FILENAME` (required) — base name for renamed files and the output PDF
 - `OPENAI_API_KEY` (optional) — passed through from host system; enables OCR text extraction to `TEXT_CONTENT.md`
 - `OPENAI_MODEL` (optional) — OpenAI model to use (default: `gpt-4o-mini`)
+- `MODE` (optional) — `full` (default) runs the complete pipeline; `ocr` runs only OCR on existing images

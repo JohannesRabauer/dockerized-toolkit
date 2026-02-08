@@ -40,6 +40,11 @@ With OCR:
 docker run --rm -e FILENAME="my_document" -e OPENAI_API_KEY -e OPENAI_MODEL="gpt-4o-mini" -v "${PWD}/my_scans:/data" scansort
 ```
 
+OCR only (on already reordered images):
+```bash
+docker run --rm -e FILENAME="my_document" -e MODE=ocr -e OPENAI_API_KEY -v "${PWD}/my_scans:/data" scansort
+```
+
 ## Architecture
 
 ### Project Structure
@@ -73,6 +78,7 @@ Tools follow a consistent pattern:
 - Reconstructs double-sided scan order by interleaving fronts and reversed backs
 - Uses `img2pdf` for lossless PDF generation (no image re-encoding)
 - OCR is optional, triggered by `OPENAI_API_KEY` env var; sends one image per API request
+- `MODE=ocr` skips reorder/rename/PDF and runs OCR only on existing images
 - Volume mount is `/data` (not `/downloads`)
 
 ## Conventions

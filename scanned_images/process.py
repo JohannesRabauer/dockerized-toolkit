@@ -7,6 +7,7 @@ generates a PDF, and optionally runs OCR via OpenAI.
 
 Environment variables:
   FILENAME       (required) Base name for output files
+  MODE           (optional) "full" (default) or "ocr" (OCR only on existing images)
   OPENAI_API_KEY (optional) Enables OCR text extraction
   OPENAI_MODEL   (optional) OpenAI model to use (default: gpt-4o-mini)
 """
@@ -94,6 +95,7 @@ def run_ocr(image_files, filename):
     """Send each image to OpenAI for text recognition."""
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if not api_key:
+        print("Error: OPENAI_API_KEY not set, skipping OCR.")
         return
 
     from openai import OpenAI
@@ -154,6 +156,8 @@ def main():
         print("Error: FILENAME environment variable not set")
         sys.exit(1)
 
+    mode = os.environ.get("MODE", "full").strip().lower()
+
     images = get_images()
     if not images:
         print(f"Error: No image files found in {DATA_DIR}")
@@ -161,18 +165,16 @@ def main():
 
     print(f"Found {len(images)} images.")
 
-    # Step 1: Reorder
-    ordered = interleave_reorder(images)
-    print(f"Reordered: {', '.join(ordered)}")
-
-    # Step 2: Rename
-    renamed = rename_files(ordered, filename)
-
-    # Step 3: PDF
-    create_pdf(renamed, filename)
-
-    # Step 4: OCR (optional)
-    run_ocr(renamed, filename)
+    if mode == "ocr":
+        # OCR only on existing images (already reordered)
+        run_ocr(images, filename)
+    else:
+        # Full pipeline: reorder → rename → PDF → OCR
+        ordered = interleave_reorder(images)
+        print(f"Reordered: {', '.join(ordered)}")
+        renamed = rename_files(ordered, filename)
+        create_pdf(renamed, filename)
+        run_ocr(renamed, filename)
 
     print("Done.")
 
