@@ -37,7 +37,7 @@ docker run --rm -e FILENAME="my_document" -v "${PWD}/my_scans:/data" scansort
 
 With OCR:
 ```bash
-docker run --rm -e FILENAME="my_document" -e OPENAI_API_KEY="sk-..." -e OPENAI_MODEL="gpt-4o-mini" -v "${PWD}/my_scans:/data" scansort
+docker run --rm -e FILENAME="my_document" -e OPENAI_API_KEY -e OPENAI_MODEL="gpt-4o-mini" -v "${PWD}/my_scans:/data" scansort
 ```
 
 ## Architecture

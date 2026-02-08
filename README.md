@@ -14,9 +14,9 @@ Reconstructs correct page order from double-sided scans, creates a PDF, and opti
 
 1. `docker build -t scansort scanned_images/`
 2. `docker run --rm -e FILENAME="my_document" -v "${PWD}/my_scans:/data" scansort`
-3. With OCR: `docker run --rm -e FILENAME="my_document" -e OPENAI_API_KEY="sk-..." -v "${PWD}/my_scans:/data" scansort`
+3. With OCR: `docker run --rm -e FILENAME="my_document" -e OPENAI_API_KEY -v "${PWD}/my_scans:/data" scansort`
 
 Environment variables:
 - `FILENAME` (required) — base name for renamed files and the output PDF
-- `OPENAI_API_KEY` (optional) — enables OCR text extraction to `TEXT_CONTENT.md`
+- `OPENAI_API_KEY` (optional) — passed through from host system; enables OCR text extraction to `TEXT_CONTENT.md`
 - `OPENAI_MODEL` (optional) — OpenAI model to use (default: `gpt-4o-mini`)
