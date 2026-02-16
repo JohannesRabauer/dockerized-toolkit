@@ -8,6 +8,7 @@ generates a PDF, and optionally runs OCR via OpenAI.
 Environment variables:
   FILENAME       (required) Base name for output files
   MODE           (optional) "full" (default) or "ocr" (OCR only on existing images)
+  REORDER        (optional) "true" (default) interleaves front/back pages; "false" keeps original order
   OPENAI_API_KEY (optional) Enables OCR text extraction
   OPENAI_MODEL   (optional) OpenAI model to use (default: gpt-4o-mini)
 """
@@ -211,13 +212,19 @@ def main():
 
     log(f"Found {len(images)} images.")
 
+    reorder = os.environ.get("REORDER", "true").strip().lower() in ("true", "1", "yes")
+
     if mode == "ocr":
         # OCR only on existing images (already reordered)
         run_ocr(images, filename)
     else:
-        # Full pipeline: reorder → rename → PDF → OCR
-        ordered = interleave_reorder(images)
-        log(f"Reordered: {', '.join(ordered)}")
+        # Full pipeline: (reorder →) rename → PDF → OCR
+        if reorder:
+            ordered = interleave_reorder(images)
+            log(f"Reordered: {', '.join(ordered)}")
+        else:
+            ordered = images
+            log("Skipping reorder (REORDER=false).")
         renamed = rename_files(ordered, filename)
         create_pdf(renamed, filename)
         run_ocr(renamed, filename)

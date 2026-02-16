@@ -13,6 +13,7 @@ docker run --rm -e MODE=audio -e URL="https://www.youtube.com/watch?v=dQw4w9WgXc
 # Scanned Images Processor
 docker build -t scansort scanned_images/
 docker run --rm -e FILENAME="my_document" -v "${PWD}/my_scans:/data" scansort
+docker run --rm -e FILENAME="my_document" -e REORDER=false -v "${PWD}/my_scans:/data" scansort
 docker run --rm -it -e FILENAME="my_document" -e OPENAI_API_KEY -e OPENAI_MODEL="gpt-4o-mini" -v "${PWD}/my_scans:/data" scansort
 docker run --rm -it -e FILENAME="my_document" -e MODE=ocr -e OPENAI_API_KEY -v "${PWD}/my_scans:/data" scansort
 ```
