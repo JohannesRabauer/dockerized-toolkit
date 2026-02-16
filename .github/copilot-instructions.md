@@ -1,107 +1,81 @@
 # Copilot Instructions for Dockerized Toolkit
 
-## Overview
-
-This repository contains Docker-based utilities to avoid installing software directly on the host machine. Each tool lives in its own subdirectory with a Dockerfile and supporting scripts.
+Docker-based utilities that avoid installing software on the host. Each tool is self-contained in its own subdirectory with a Dockerfile and scripts.
 
 ## Build and Test Commands
 
-### YouTube Downloader (YTDL)
-
-Build the image:
 ```bash
+# YouTube Downloader
 docker build -t ytdl Youtube/
-```
-
-Test video download:
-```bash
 docker run --rm -e MODE=video -e URL="https://www.youtube.com/watch?v=dQw4w9WgXcQ" -v "${PWD}:/downloads" ytdl
-```
-
-Test audio download:
-```bash
 docker run --rm -e MODE=audio -e URL="https://www.youtube.com/watch?v=dQw4w9WgXcQ" -v "${PWD}:/downloads" ytdl
-```
 
-### Scanned Images Processor
-
-Build the image:
-```bash
+# Scanned Images Processor
 docker build -t scansort scanned_images/
-```
-
-Process scanned images:
-```bash
 docker run --rm -e FILENAME="my_document" -v "${PWD}/my_scans:/data" scansort
-```
-
-With OCR:
-```bash
 docker run --rm -it -e FILENAME="my_document" -e OPENAI_API_KEY -e OPENAI_MODEL="gpt-4o-mini" -v "${PWD}/my_scans:/data" scansort
-```
-
-OCR only (on already reordered images):
-```bash
 docker run --rm -it -e FILENAME="my_document" -e MODE=ocr -e OPENAI_API_KEY -v "${PWD}/my_scans:/data" scansort
 ```
 
+All build commands run from the repo root. There are no automated tests — verify by building the image and running it.
+
 ## Architecture
 
-### Project Structure
+- **One directory per tool** at the repo root, each containing a `Dockerfile`, script(s), and `.gitignore`
+- **No shared code** between tools — each is fully independent
+- **No docker-compose** — tools are standalone `docker run` commands
+- **Config via env vars only** — no CLI args, no config files
+- **Volume-mounted output** — containers write to a mounted dir, never embed output in the image
 
-- Each utility is self-contained in its own directory (e.g., `Youtube/`)
-- Each directory contains:
-  - `Dockerfile` - Defines the containerized environment
-  - Shell script(s) or Python script(s) - Implements the tool's functionality
-  - `.gitignore` - Excludes output files (e.g., `*.mp3`, `*.mp4`)
+Reference implementations: `Youtube/` (shell-based tool), `scanned_images/` (Python-based tool)
 
-### Tool Pattern
+## Code Style
 
-Tools follow a consistent pattern:
-1. **Alpine-based images** - Minimal footprint using `python:3-alpine`
-2. **Environment variable configuration** - Tools are configured via env vars (e.g., `URL`, `MODE`)
-3. **Volume mounting** - Output directory is mounted from the host (`/downloads` or `/data`)
-4. **Entrypoint scripts** - Shell or Python scripts handle the tool logic, invoked via `ENTRYPOINT`
+### Shell Scripts (see `Youtube/downloader.sh`)
+- `#!/bin/sh` — POSIX-only, no bashisms (Alpine has no bash)
+- Linear flow, no functions needed for simple tools
+- Validate required env vars at the top: `if [ -z "$VAR" ]; then echo "Error: ..."; exit 1; fi`
 
-### YouTube Downloader Implementation
-
-- Uses `yt-dlp` for downloading
-- Requires `ffmpeg` for format conversion
-- Modes:
-  - `MODE=audio`: Downloads and converts to MP3 (default)
-  - `MODE=video`: Downloads best quality MP4 video+audio
-- Output filename format: `%(title)s.%(ext)s` (YouTube title + extension)
-
-### Scanned Images Implementation
-
-- Python script (`process.py`) using Pillow, img2pdf, and OpenAI SDK
-- Reconstructs double-sided scan order by interleaving fronts and reversed backs
-- Uses `img2pdf` for lossless PDF generation (no image re-encoding)
-- OCR is optional, triggered by `OPENAI_API_KEY` env var; sends one image per API request
-- `MODE=ocr` skips reorder/rename/PDF and runs OCR only on existing images
-- Volume mount is `/data` (not `/downloads`)
+### Python Scripts (see `scanned_images/process.py`)
+- `#!/usr/bin/env python3`
+- Structured with functions and a `main()` entry point
+- Constants at module level (e.g., `DATA_DIR`, `IMAGE_EXTENSIONS`)
+- `print(msg, flush=True)` for real-time Docker log output
+- `sys.exit(1)` on fatal errors with descriptive messages
+- Third-party imports at the top; use standard library where possible
+- No type hints currently used
+- Retry with exponential backoff for external API calls
 
 ## Conventions
 
 ### Adding New Tools
 
-When adding a new dockerized tool:
 1. Create a new directory at the repository root
-2. Include a `Dockerfile` with Alpine Linux as base (unless specific requirements dictate otherwise)
-3. Use environment variables for configuration (not command-line args)
-4. Mount `/downloads` as the output directory
-5. Add output file patterns to `.gitignore`
-6. Update the README.md with usage examples following the existing format
+2. Include a `Dockerfile` using `python:3-alpine` base (unless requirements dictate otherwise)
+3. Use environment variables for configuration — not command-line args
+4. Set `WORKDIR` to the output mount point (prefer `/downloads`)
+5. Add a `.gitignore` for output file patterns
+6. Update `README.md` with usage examples following the existing format
 
-### Dockerfile Practices
+### Dockerfile Pattern (consistent order)
 
-- Use `--no-cache` flags for pip/apk to minimize image size
-- Set `WORKDIR /downloads` as the standard output location
-- Copy and `chmod +x` shell scripts in the build step
-- Use `ENTRYPOINT` (not `CMD`) for the main script
+```dockerfile
+FROM python:3-alpine
+RUN apk add --no-cache <system-deps> \
+    && pip install --no-cache-dir <python-deps>
+WORKDIR /downloads
+COPY script.sh /usr/local/bin/script.sh
+RUN chmod +x /usr/local/bin/script.sh
+ENTRYPOINT ["/usr/local/bin/script.sh"]
+```
 
-### Script Patterns
+Key rules: `--no-cache` on all install commands, `ENTRYPOINT` (not `CMD`), scripts go in `/usr/local/bin/`.
 
-- Shell scripts use `#!/bin/sh` (not bash) for Alpine compatibility
-- Validate required environment variables and exit with clear error messages
-- Default to the most common use case when env vars are optional
+### .gitignore Strategy
+
+- Root `.gitignore`: repo-level artifacts (`/temp`, `__pycache__`)
+- Per-tool `.gitignore`: output artifacts (`*.mp3`, `*.mp4`, `*.pdf`, etc.)
+
+### Known Inconsistency
+
+The `scanned_images/` tool mounts at `/data` instead of the standard `/downloads`. New tools should use `/downloads`.
