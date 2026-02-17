@@ -16,6 +16,10 @@ docker run --rm -e FILENAME="my_document" -v "${PWD}/my_scans:/data" scansort
 docker run --rm -e FILENAME="my_document" -e REORDER=false -v "${PWD}/my_scans:/data" scansort
 docker run --rm -it -e FILENAME="my_document" -e OPENAI_API_KEY -e OPENAI_MODEL="gpt-4o-mini" -v "${PWD}/my_scans:/data" scansort
 docker run --rm -it -e FILENAME="my_document" -e MODE=ocr -e OPENAI_API_KEY -v "${PWD}/my_scans:/data" scansort
+
+# MP3 Extractor
+docker build -t mp3extract mp3_extractor/
+docker run --rm -e INPUT="video.mp4" -v "${PWD}:/downloads" mp3extract
 ```
 
 All build commands run from the repo root. There are no automated tests — verify by building the image and running it.

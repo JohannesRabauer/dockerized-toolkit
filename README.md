@@ -23,3 +23,14 @@ Environment variables:
 - `OPENAI_API_KEY` (optional) — passed through from host system; enables OCR text extraction to `TEXT_CONTENT.md`
 - `OPENAI_MODEL` (optional) — OpenAI model to use (default: `gpt-4o-mini`)
 - `MODE` (optional) — `full` (default) runs the complete pipeline; `ocr` runs only OCR on existing images
+
+## MP3 Extractor
+
+Extracts audio from any video file as MP3.
+
+1. `docker build -t mp3extract mp3_extractor/`
+2. `docker run --rm -e INPUT="video.mp4" -v "${PWD}:/downloads" mp3extract`
+
+Environment variables:
+- `INPUT` (required) — filename of the video to extract audio from
+- `BITRATE` (optional) — audio bitrate (default: `192k`)
